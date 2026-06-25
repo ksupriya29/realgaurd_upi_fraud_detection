@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fraud Detection UI</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #0f172a;
+            color: white;
+            text-align: center;
+        }
+
+        .container {
+            width: 70%;
+            margin: auto;
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        textarea {
+            width: 95%;
+            height: 280px;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #22c55e;
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .output {
+            margin-top: 20px;
+            background: #020617;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: left;
+        }
+
+        .high { color: red; }
+        .medium { color: orange; }
+        .low { color: lightgreen; }
+    </style>
+</head>
+
+<body>
+
+<h1>💳 Fraud Detection System</h1>
+
+<div class="container">
+
+    <h3>Paste Transaction JSON</h3>
+
+    <textarea id="jsonInput">
+{
+  "Amount": 25000,
+  "MerchantCategory": "Electronics",
+  "TransactionType": "Online",
+  "Latitude": 19.2,
+  "Longitude": 72.8,
+  "AvgTransactionAmount": 2000,
+  "TransactionFrequency": 25,
+  "UnusualLocation": 1,
+  "UnusualAmount": 1,
+  "NewDevice": 1,
+  "FailedAttempts": 5,
+  "Hour": 2,
+  "DayOfWeek": 6,
+  "User_Transaction_Count": 60,
+  "IP_Frequency": 15,
+  "Phone_Usage_Count": 10
+}
+    </textarea>
+
+    <br>
+    <button onclick="predict()">🚀 Check Fraud</button>
+
+    <div class="output" id="result"></div>
+
+</div>
+
+<script>
+async function predict() {
+
+    let data;
+
+    // ✅ Step 1: Read JSON
+    try {
+        data = JSON.parse(document.getElementById("jsonInput").value);
+    } catch (e) {
+        document.getElementById("result").innerHTML =
+            "<p style='color:red;'>❌ Invalid JSON format</p>";
+        return;
+    }
+
+    // ✅ Step 2: Send to backend
+    const res = await fetch("http://127.0.0.1:8000/predict", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    });
+
+    const result = await res.json();
+
+    // ✅ Step 3: Display SAME backend output
+    let color = "low";
+    if (result.risk_level === "HIGH") color = "high";
+    else if (result.risk_level === "MEDIUM") color = "medium";
+
+    document.getElementById("result").innerHTML = `
+        <h2>📊 Prediction Result</h2>
+
+        <p><b>Fraud Probability:</b> ${result.fraud_probability}</p>
+        <p><b>Model Probability:</b> ${result.raw_model_probability}</p>
+        <p><b>Is Fraud:</b> ${result.is_fraud}</p>
+
+        <p class="${color}">
+            <b>Risk Level:</b> ${result.risk_level}
+        </p>
+
+        <h3>🧠 Reasons:</h3>
+        <ul>
+            ${result.reasons.map(r => `<li>${r}</li>`).join("")}
+        </ul>
+    `;
+}
+</script>
+
+</body>
+</html>
