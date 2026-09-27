@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.pdb
+
+# Virtual environment
+venv/
+env/
+.venv/
+.env/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Database (auto-created at runtime)
+*.db
+*.sqlite
+*.sqlite3
+
+# Model artifacts (large binary files — track with Git LFS or store separately)
+# Comment out these lines if you DO want to commit models to git
+# models/*.pkl
+# artifacts/*.pkl
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+*.ipynb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+server.log
+server_err.log
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Test artifacts
+test_api.py
+output.jpeg

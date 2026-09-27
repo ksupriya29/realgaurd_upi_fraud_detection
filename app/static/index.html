@@ -1,140 +1,1340 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Fraud Detection UI</title>
-    <style>
-        body {
-            font-family: Arial;
-            background: #0f172a;
-            color: white;
-            text-align: center;
-        }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>RealGuard – UPI Fraud Detection</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ── Reset & Base ─────────────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#030712;--surface:#0f172a;--surface2:#1e293b;--border:#1e293b;
+  --text:#e2e8f0;--muted:#64748b;--sub:#94a3b8;
+  --blue:#3b82f6;--blue-dark:#1d4ed8;
+  --green:#22c55e;--red:#ef4444;--amber:#f59e0b;
+  --radius:12px;
+}
+body{font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+a{color:var(--blue);text-decoration:none}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
 
-        .container {
-            width: 70%;
-            margin: auto;
-            background: #1e293b;
-            padding: 20px;
-            border-radius: 10px;
-        }
+/* ── Header ──────────────────────────────────────────────────────── */
+header{
+  background:linear-gradient(135deg,#1e3a5f,#0f172a);
+  padding:0 32px;height:60px;
+  display:flex;align-items:center;gap:16px;
+  border-bottom:1px solid #1e40af;
+  position:sticky;top:0;z-index:100;
+}
+header .logo{font-size:1.3rem;font-weight:800;color:#60a5fa;letter-spacing:.04em}
+header .tagline{font-size:.75rem;color:var(--sub);margin-top:1px}
+.api-badge{
+  margin-left:auto;padding:4px 12px;
+  border:1px solid var(--muted);border-radius:999px;
+  color:var(--muted);font-size:.72rem;font-weight:700;
+  transition:all .3s;
+}
 
-        textarea {
-            width: 95%;
-            height: 280px;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-        }
+/* ── Nav ─────────────────────────────────────────────────────────── */
+nav{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;gap:4px;padding:0 24px;overflow-x:auto;
+}
+.nav-tab{
+  padding:12px 18px;cursor:pointer;border-bottom:2px solid transparent;
+  color:var(--sub);font-weight:600;font-size:.82rem;white-space:nowrap;
+  transition:color .2s,border-color .2s;
+}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
 
-        button {
-            margin-top: 15px;
-            padding: 10px 20px;
-            background: #22c55e;
-            border: none;
-            color: white;
-            font-size: 16px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+/* ── Pages ───────────────────────────────────────────────────────── */
+.page{display:none;padding:24px 28px;max-width:1400px;margin:auto}
+.page.active{display:block}
 
-        .output {
-            margin-top: 20px;
-            background: #020617;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: left;
-        }
+/* ── Cards ───────────────────────────────────────────────────────── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px}
+.card-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--sub);margin-bottom:16px}
 
-        .high { color: red; }
-        .medium { color: orange; }
-        .low { color: lightgreen; }
-    </style>
+/* ── Grid ────────────────────────────────────────────────────────── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:900px){.two-col,.three-col,.form-grid{grid-template-columns:1fr}}
+
+/* ── Form controls ───────────────────────────────────────────────── */
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:.72rem;color:var(--sub);font-weight:600}
+.form-group input,.form-group select{
+  background:var(--surface2);border:1px solid #334155;border-radius:8px;
+  padding:8px 10px;color:var(--text);font-size:.84rem;outline:none;
+  transition:border-color .2s;
+}
+.form-group input:focus,.form-group select:focus{border-color:var(--blue)}
+.form-group input.error,.form-group select.error{border-color:var(--red)}
+
+/* ── Toggle buttons ──────────────────────────────────────────────── */
+.toggle-group{display:flex;gap:6px}
+.toggle-btn{
+  flex:1;padding:8px;border-radius:7px;border:1px solid #334155;
+  background:var(--surface2);color:var(--sub);cursor:pointer;
+  font-size:.78rem;font-weight:700;transition:all .15s;
+}
+.toggle-btn.active{background:#1d4ed8;border-color:var(--blue);color:#fff}
+
+/* ── Primary button ──────────────────────────────────────────────── */
+.btn-primary{
+  width:100%;padding:13px;
+  background:linear-gradient(135deg,#2563eb,#1d4ed8);
+  border:none;border-radius:10px;color:#fff;
+  font-size:.95rem;font-weight:700;cursor:pointer;
+  letter-spacing:.03em;transition:transform .15s,box-shadow .15s;
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px #2563eb44}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-secondary{
+  padding:7px 14px;background:var(--surface2);border:1px solid #334155;
+  border-radius:7px;color:var(--sub);cursor:pointer;font-size:.8rem;font-weight:600;
+  transition:all .15s;
+}
+.btn-secondary:hover{border-color:var(--blue);color:var(--blue)}
+
+/* ── Verdict card ────────────────────────────────────────────────── */
+.verdict{
+  border-radius:14px;padding:24px;display:flex;align-items:center;
+  gap:20px;border:2px solid var(--border);transition:all .35s;
+}
+.verdict.idle{background:var(--surface)}
+.verdict.fraud{background:#1a0505;border-color:var(--red)}
+.verdict.legit{background:#031a06;border-color:var(--green)}
+.verdict.medium{background:#1a1005;border-color:var(--amber)}
+.verdict-icon{font-size:3.2rem;line-height:1;flex-shrink:0}
+.verdict h2{font-size:1.45rem;font-weight:800}
+.verdict p{font-size:.82rem;color:var(--sub);margin-top:4px}
+.risk-pill{
+  display:inline-block;margin-top:8px;padding:3px 14px;
+  border-radius:999px;font-weight:700;font-size:.76rem;
+}
+.pill-HIGH{background:#7f1d1d;color:#fca5a5}
+.pill-MEDIUM{background:#78350f;color:#fcd34d}
+.pill-LOW{background:#14532d;color:#86efac}
+
+/* ── Gauge ───────────────────────────────────────────────────────── */
+.gauge-wrap{position:relative;width:200px;margin:0 auto 8px}
+.gauge-label{
+  position:absolute;bottom:0;width:100%;text-align:center;
+  font-size:1.8rem;font-weight:800;pointer-events:none;
+}
+
+/* ── Progress bars ───────────────────────────────────────────────── */
+.prob-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.prob-row label{width:150px;font-size:.76rem;color:var(--sub);flex-shrink:0}
+.prob-bar-bg{flex:1;height:9px;background:var(--surface2);border-radius:999px;overflow:hidden}
+.prob-bar{height:100%;border-radius:999px;transition:width .9s ease;width:0}
+.prob-val{width:44px;text-align:right;font-size:.76rem;font-weight:600;color:var(--text)}
+
+/* ── SHAP section headers ────────────────────────────────────────── */
+.shap-section{margin-bottom:16px}
+.shap-section-title{
+  font-size:.72rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.07em;margin-bottom:10px;padding:4px 0;
+  border-bottom:1px solid var(--border);
+}
+.shap-section-title.risk-up{color:#fca5a5}
+.shap-section-title.risk-down{color:#86efac}
+
+/* ── SHAP bar ────────────────────────────────────────────────────── */
+.shap-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.shap-label{width:160px;font-size:.76rem;color:var(--sub);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shap-bar-bg{flex:1;height:8px;background:var(--surface2);border-radius:999px;overflow:hidden}
+.shap-bar-fill{height:100%;border-radius:999px;transition:width .8s ease;width:0}
+.shap-val{width:52px;text-align:right;font-size:.72rem;color:var(--sub)}
+.shap-dir{font-size:.65rem;padding:1px 6px;border-radius:3px;margin-left:2px}
+.shap-up{background:#7f1d1d33;color:#fca5a5}
+.shap-down{background:#14532d33;color:#86efac}
+
+/* ── Reason items ────────────────────────────────────────────────── */
+.reason-item{
+  display:flex;align-items:flex-start;gap:10px;
+  background:var(--surface2);border-left:3px solid var(--amber);
+  padding:10px 13px;border-radius:0 8px 8px 0;
+  margin-bottom:8px;font-size:.82rem;
+  animation:slideIn .3s ease forwards;opacity:0;
+}
+@keyframes slideIn{from{transform:translateX(-10px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ── Summary grid ────────────────────────────────────────────────── */
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.summary-item{
+  background:var(--surface2);padding:10px 13px;border-radius:8px;
+  display:flex;flex-direction:column;gap:2px;
+}
+.summary-item .s-label{font-size:.68rem;color:var(--sub);text-transform:uppercase;letter-spacing:.05em}
+.summary-item .s-val{font-size:.88rem;font-weight:600;color:var(--text)}
+
+/* ── Risk indicators ─────────────────────────────────────────────── */
+.risk-indicators{display:flex;flex-direction:column;gap:7px;margin-top:8px}
+.ri-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 13px;border-radius:8px;font-size:.82rem;
+}
+.ri-item.bad {background:#1a0505;border:1px solid #7f1d1d}
+.ri-item.good{background:#031a06;border:1px solid #14532d}
+.ri-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ri-bad{background:var(--red)}
+.ri-good{background:var(--green)}
+
+/* ── Stat cards ──────────────────────────────────────────────────── */
+.stat-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+@media(max-width:700px){.stat-cards{grid-template-columns:repeat(2,1fr)}}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px 18px;
+}
+.stat-card .sc-label{font-size:.7rem;color:var(--sub);text-transform:uppercase;letter-spacing:.07em}
+.stat-card .sc-val{font-size:1.7rem;font-weight:800;margin:4px 0 2px;color:var(--text)}
+.stat-card .sc-sub{font-size:.72rem;color:var(--muted)}
+.sc-fraud .sc-val{color:var(--red)}
+.sc-legit .sc-val{color:var(--green)}
+.sc-rate  .sc-val{color:var(--amber)}
+
+/* ── Charts ──────────────────────────────────────────────────────── */
+.chart-box{position:relative;height:220px}
+.chart-box.tall{height:280px}
+
+/* ── Tables ──────────────────────────────────────────────────────── */
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+thead tr{background:var(--surface2)}
+th{padding:10px 14px;text-align:left;color:var(--sub);font-weight:700;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+td{padding:10px 14px;border-top:1px solid var(--border);color:var(--text);white-space:nowrap}
+tr:hover td{background:#ffffff05}
+.badge-fraud{background:#7f1d1d33;color:#fca5a5;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:700}
+.badge-legit{background:#14532d33;color:#86efac;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:700}
+.badge-HIGH  {background:#7f1d1d33;color:#fca5a5;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:700}
+.badge-MEDIUM{background:#78350f33;color:#fcd34d;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:700}
+.badge-LOW   {background:#14532d33;color:#86efac;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:700}
+
+/* ── Metrics ─────────────────────────────────────────────────────── */
+.metrics-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:900px){.metrics-grid{grid-template-columns:repeat(3,1fr)}}
+.metric-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:14px;text-align:center;
+}
+.metric-card .mc-label{font-size:.68rem;color:var(--sub);text-transform:uppercase;letter-spacing:.06em}
+.metric-card .mc-val{font-size:1.5rem;font-weight:800;color:var(--blue);margin:4px 0}
+.metric-card .mc-sub{font-size:.68rem;color:var(--muted)}
+
+/* ── Filter row ──────────────────────────────────────────────────── */
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.filter-row input{
+  flex:1;min-width:160px;background:var(--surface2);border:1px solid #334155;
+  border-radius:8px;padding:7px 10px;color:var(--text);font-size:.82rem;outline:none;
+}
+.filter-row input:focus{border-color:var(--blue)}
+
+/* ── Spinner ─────────────────────────────────────────────────────── */
+.spinner{
+  width:26px;height:26px;border:3px solid var(--surface2);
+  border-top-color:var(--blue);border-radius:50%;
+  animation:spin .7s linear infinite;margin:30px auto;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Empty & Error states ────────────────────────────────────────── */
+.empty-state{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-state .es-icon{font-size:3.5rem;margin-bottom:12px}
+.empty-state p{font-size:.88rem}
+.error-msg{
+  background:#1a0505;border:1px solid var(--red);color:#fca5a5;
+  padding:12px 16px;border-radius:8px;font-size:.82rem;
+  margin-bottom:16px;display:none;
+}
+
+/* ── Toast ───────────────────────────────────────────────────────── */
+#toast{
+  position:fixed;bottom:24px;right:24px;z-index:9999;
+  background:var(--surface);border:1px solid var(--border);
+  padding:12px 18px;border-radius:10px;font-size:.82rem;
+  box-shadow:0 8px 30px #0008;transition:opacity .3s;opacity:0;pointer-events:none;
+}
+#toast.show{opacity:1}
+
+/* ── Note box ────────────────────────────────────────────────────── */
+.note-box{
+  background:#1e3a5f22;border:1px solid #1e3a5f;border-radius:8px;
+  padding:10px 14px;font-size:.78rem;color:var(--sub);margin-bottom:14px;
+}
+
+/* ── Section titles ──────────────────────────────────────────────── */
+.section-title{font-size:1rem;font-weight:700;color:var(--text);margin-bottom:16px}
+.section-sub{font-size:.78rem;color:var(--sub);margin-top:-12px;margin-bottom:16px}
+
+/* ── Idle placeholder ────────────────────────────────────────────── */
+.idle-placeholder{text-align:center;padding:40px 20px;color:var(--muted)}
+.idle-placeholder .ip-icon{font-size:3.5rem;margin-bottom:12px}
+
+footer{text-align:center;padding:16px;color:#1e293b;font-size:.72rem;border-top:1px solid var(--border);margin-top:32px}
+</style>
 </head>
-
 <body>
 
-<h1>💳 Fraud Detection System</h1>
+<!-- ══════════ HEADER ══════════ -->
+<header>
+  <div>
+    <div class="logo">&#x1F510; REALGUARD</div>
+    <div class="tagline">UPI Fraud Detection &amp; Risk Analysis</div>
+  </div>
+  <div class="api-badge" id="apiBadge">&#x25CF; Connecting&hellip;</div>
+</header>
 
-<div class="container">
+<!-- ══════════ NAV ══════════ -->
+<nav>
+  <div class="nav-tab active" onclick="showPage('analyze',this)">&#x1F50D; Analyse</div>
+  <div class="nav-tab" onclick="showPage('history',this)">&#x1F4CB; History</div>
+  <div class="nav-tab" onclick="showPage('analytics',this)">&#x1F4CA; Analytics</div>
+  <div class="nav-tab" onclick="showPage('model',this)">&#x1F916; Model Performance</div>
+</nav>
 
-    <h3>Paste Transaction JSON</h3>
+<!-- ═══════════════════════════════════
+     PAGE 1 — ANALYSE
+═══════════════════════════════════ -->
+<div id="page-analyze" class="page active">
+  <div class="two-col">
 
-    <textarea id="jsonInput">
-{
-  "Amount": 25000,
-  "MerchantCategory": "Electronics",
-  "TransactionType": "Online",
-  "Latitude": 19.2,
-  "Longitude": 72.8,
-  "AvgTransactionAmount": 2000,
-  "TransactionFrequency": 25,
-  "UnusualLocation": 1,
-  "UnusualAmount": 1,
-  "NewDevice": 1,
-  "FailedAttempts": 5,
-  "Hour": 2,
-  "DayOfWeek": 6,
-  "User_Transaction_Count": 60,
-  "IP_Frequency": 15,
-  "Phone_Usage_Count": 10
-}
-    </textarea>
+    <!-- LEFT: Form -->
+    <div style="display:flex;flex-direction:column;gap:16px">
 
-    <br>
-    <button onclick="predict()">🚀 Check Fraud</button>
+      <div class="card">
+        <div class="card-title">&#x1F4B0; Transaction Details</div>
+        <div class="error-msg" id="formError"></div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Amount (Rs.)</label>
+            <input type="number" id="f_Amount" value="25000" min="1" step="1"/>
+          </div>
+          <div class="form-group">
+            <label>Avg Transaction Amount (Rs.)</label>
+            <input type="number" id="f_AvgAmt" value="2000" min="1" step="1"/>
+          </div>
+          <div class="form-group">
+            <label>Merchant Category</label>
+            <select id="f_Merchant">
+              <option>Clothing</option>
+              <option selected>Electronics</option>
+              <option>Entertainment</option>
+              <option>Groceries</option>
+              <option>Restaurants</option>
+              <option>Travel</option>
+              <option>Utilities</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Transaction Type</label>
+            <select id="f_TxnType">
+              <option value="P2M">P2M (Person to Merchant)</option>
+              <option value="P2P">P2P (Person to Person)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Transaction Frequency</label>
+            <select id="f_Freq">
+              <option value="1/day">1/day (Low)</option>
+              <option value="3/day">3/day (Medium)</option>
+              <option value="5/day" selected>5/day (High)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Failed Attempts</label>
+            <input type="number" id="f_Failed" value="5" min="0" max="100"/>
+          </div>
+          <div class="form-group">
+            <label>Hour of Day (0&ndash;23)</label>
+            <input type="number" id="f_Hour" value="2" min="0" max="23"/>
+          </div>
+          <div class="form-group">
+            <label>Day of Week (0=Mon, 6=Sun)</label>
+            <input type="number" id="f_Day" value="6" min="0" max="6"/>
+          </div>
+          <div class="form-group">
+            <label>Latitude</label>
+            <input type="number" id="f_Lat" value="19.2" step="0.0001" min="-90" max="90"/>
+          </div>
+          <div class="form-group">
+            <label>Longitude</label>
+            <input type="number" id="f_Lon" value="72.8" step="0.0001" min="-180" max="180"/>
+          </div>
+          <div class="form-group">
+            <label>User Transaction Count</label>
+            <input type="number" id="f_UserTxn" value="60" min="0"/>
+          </div>
+          <div class="form-group">
+            <label>IP Frequency</label>
+            <input type="number" id="f_IP" value="15" min="0"/>
+          </div>
+          <div class="form-group" style="grid-column:span 2">
+            <label>Phone Usage Count</label>
+            <input type="number" id="f_Phone" value="10" min="0"/>
+          </div>
+        </div>
+      </div>
 
-    <div class="output" id="result"></div>
+      <div class="card">
+        <div class="card-title">&#x1F6A9; Risk Flags</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Unusual Location</label>
+            <div class="toggle-group">
+              <button class="toggle-btn active" id="unusualLoc_1" onclick="setFlag('UnusualLocation',1)">Yes</button>
+              <button class="toggle-btn"        id="unusualLoc_0" onclick="setFlag('UnusualLocation',0)">No</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Unusual Amount</label>
+            <div class="toggle-group">
+              <button class="toggle-btn active" id="unusualAmt_1" onclick="setFlag('UnusualAmount',1)">Yes</button>
+              <button class="toggle-btn"        id="unusualAmt_0" onclick="setFlag('UnusualAmount',0)">No</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>New / Unrecognised Device</label>
+            <div class="toggle-group">
+              <button class="toggle-btn active" id="newDev_1" onclick="setFlag('NewDevice',1)">Yes</button>
+              <button class="toggle-btn"        id="newDev_0" onclick="setFlag('NewDevice',0)">No</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
+      <button class="btn-primary" id="analyseBtn" onclick="analyse()">&#x1F680; Analyse Transaction</button>
+
+    </div><!-- end left -->
+
+    <!-- RIGHT: Results -->
+    <div style="display:flex;flex-direction:column;gap:16px" id="resultsPanel">
+
+      <!-- VERDICT -->
+      <div class="verdict idle" id="verdictCard">
+        <div class="idle-placeholder" style="width:100%">
+          <div class="ip-icon">&#x1F6E1;&#xFE0F;</div>
+          <p>Fill in the form and click <b>Analyse Transaction</b></p>
+        </div>
+      </div>
+
+      <!-- PROBABILITY + GAUGE -->
+      <div class="card" id="probCard" style="display:none">
+        <div class="card-title">&#x1F4CA; Risk Score</div>
+        <div class="gauge-wrap">
+          <canvas id="gaugeChart"></canvas>
+          <div class="gauge-label" id="gaugeLabel">-</div>
+        </div>
+        <div style="margin-top:16px">
+          <div class="prob-row">
+            <label style="width:180px">Final Risk Score</label>
+            <div class="prob-bar-bg"><div class="prob-bar" id="pBar1" style="background:var(--red)"></div></div>
+            <span class="prob-val" id="pVal1">-</span>
+          </div>
+          <!-- Raw model score row — hidden when identical to final risk -->
+          <div class="prob-row" id="rawScoreRow" style="display:none">
+            <label style="width:180px;color:var(--blue)">XGBoost Raw Score</label>
+            <div class="prob-bar-bg"><div class="prob-bar" id="pBar2" style="background:var(--blue)"></div></div>
+            <span class="prob-val" id="pVal2" style="color:var(--blue)">-</span>
+          </div>
+        </div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:8px" id="riskScoreNote"></div>
+      </div>
+
+      <!-- REASONS -->
+      <div class="card" id="reasonCard" style="display:none">
+        <div class="card-title">&#x1F50E; Why this prediction?</div>
+        <div id="reasonsList"></div>
+        <div id="noReasons" style="display:none;color:var(--muted);font-size:.82rem;padding:8px 0">
+          &#x2705; No suspicious patterns detected in this transaction.
+        </div>
+      </div>
+
+    </div><!-- end right -->
+  </div>
+
+  <!-- BOTTOM ROW: SHAP + Summary + Risk Indicators -->
+  <div class="two-col" style="margin-top:16px">
+
+    <!-- SHAP — split into increasing / decreasing -->
+    <div class="card" id="shapCard" style="display:none">
+      <div class="card-title">&#x1F9E0; Explainable AI &mdash; SHAP Feature Contributions</div>
+      <div class="note-box">
+        SHAP values show each feature's contribution to this fraud prediction.
+        Positive values push toward fraud; negative values push toward legitimate.
+        This is a model explanation &mdash; not proof of fraud.
+      </div>
+
+      <!-- Increasing section -->
+      <div class="shap-section" id="shapIncSection" style="display:none">
+        <div class="shap-section-title risk-up">&#x1F6A8; Factors Increasing Fraud Risk</div>
+        <div id="shapIncList"></div>
+      </div>
+
+      <!-- Decreasing section -->
+      <div class="shap-section" id="shapDecSection" style="display:none">
+        <div class="shap-section-title risk-down">&#x1F7E2; Factors Reducing Fraud Risk</div>
+        <div id="shapDecList"></div>
+      </div>
+
+      <div id="shapEmpty" style="display:none;color:var(--muted);font-size:.82rem;padding:8px 0">
+        SHAP values not available for this prediction.
+      </div>
+    </div>
+
+    <!-- Transaction Summary + Risk Indicators -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card" id="summaryCard" style="display:none">
+        <div class="card-title">&#x1F9FE; Transaction Summary</div>
+        <div class="summary-grid" id="summaryGrid"></div>
+      </div>
+      <div class="card" id="riskIndCard" style="display:none">
+        <div class="card-title">&#x26A0;&#xFE0F; Risk Indicators</div>
+        <div class="risk-indicators" id="riskIndList"></div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
+<!-- ═══════════════════════════════════
+     PAGE 2 — HISTORY
+═══════════════════════════════════ -->
+<div id="page-history" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div>
+      <div class="section-title">&#x1F4CB; Transaction History</div>
+      <div class="section-sub">All analysed transactions stored locally in SQLite</div>
+    </div>
+    <button class="btn-secondary" onclick="clearHistory()" style="border-color:#7f1d1d;color:#fca5a5">&#x1F5D1; Clear History</button>
+  </div>
+
+  <div class="filter-row">
+    <input type="text" id="histSearch" placeholder="&#x1F50D; Search by ID, merchant, type&hellip;" oninput="loadHistory()"/>
+    <button class="toggle-btn active" id="filterAll"   onclick="setHistFilter('all')"   style="width:auto;padding:8px 14px;flex:unset">All</button>
+    <button class="toggle-btn"        id="filterFraud" onclick="setHistFilter('fraud')" style="width:auto;padding:8px 14px;flex:unset">&#x1F534; Fraud</button>
+    <button class="toggle-btn"        id="filterLegit" onclick="setHistFilter('legit')" style="width:auto;padding:8px 14px;flex:unset">&#x1F7E2; Legit</button>
+  </div>
+
+  <div class="table-wrap" id="histTableWrap">
+    <div class="empty-state">
+      <div class="es-icon">&#x1F4ED;</div>
+      <p>No transactions yet. Analyse a transaction to see history.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     PAGE 3 — ANALYTICS
+═══════════════════════════════════ -->
+<div id="page-analytics" class="page">
+  <div class="section-title">&#x1F4CA; Analytics Dashboard</div>
+  <div class="section-sub" id="analyticsNote">Based on transactions analysed in this session</div>
+
+  <div class="stat-cards" id="statCards">
+    <div class="stat-card"><div class="sc-label">Total Transactions</div><div class="sc-val" id="sTot">&mdash;</div></div>
+    <div class="stat-card sc-fraud"><div class="sc-label">Fraud</div><div class="sc-val" id="sFraud">&mdash;</div></div>
+    <div class="stat-card sc-legit"><div class="sc-label">Legitimate</div><div class="sc-val" id="sLegit">&mdash;</div></div>
+    <div class="stat-card sc-rate"><div class="sc-label">Fraud Rate</div><div class="sc-val" id="sRate">&mdash;</div><div class="sc-sub">% of all transactions</div></div>
+    <div class="stat-card"><div class="sc-label">Avg Amount (Rs.)</div><div class="sc-val" id="sAvgAmt">&mdash;</div></div>
+    <div class="stat-card"><div class="sc-label">Avg Risk Score</div><div class="sc-val" id="sAvgRisk">&mdash;</div><div class="sc-sub">out of 100</div></div>
+  </div>
+
+  <div id="analyticsEmpty" class="empty-state" style="display:none">
+    <div class="es-icon">&#x1F4C8;</div>
+    <p>No data yet. Analyse transactions first to populate the dashboard.</p>
+  </div>
+
+  <div id="analyticsCharts" style="display:none">
+    <div class="two-col" style="margin-bottom:16px">
+      <div class="card"><div class="card-title">Fraud vs Legitimate</div><div class="chart-box"><canvas id="cFvL"></canvas></div></div>
+      <div class="card"><div class="card-title">Fraud by Merchant Category</div><div class="chart-box"><canvas id="cMerchant"></canvas></div></div>
+    </div>
+    <div class="two-col" style="margin-bottom:16px">
+      <div class="card"><div class="card-title">Fraud by Transaction Type</div><div class="chart-box"><canvas id="cType"></canvas></div></div>
+      <div class="card"><div class="card-title">Fraud by Hour of Day</div><div class="chart-box"><canvas id="cHour"></canvas></div></div>
+    </div>
+    <div class="two-col" style="margin-bottom:16px">
+      <div class="card"><div class="card-title">Fraud by Day of Week</div><div class="chart-box"><canvas id="cDay"></canvas></div></div>
+      <div class="card"><div class="card-title">Transaction Amount Distribution</div><div class="chart-box"><canvas id="cAmt"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     PAGE 4 — MODEL PERFORMANCE
+═══════════════════════════════════ -->
+<div id="page-model" class="page">
+  <div class="section-title">&#x1F916; Model Performance</div>
+  <div class="section-sub">Actual metrics computed on held-out test set (80/20 stratified split)</div>
+
+  <div class="note-box" style="margin-bottom:16px">
+    &#x26A0;&#xFE0F; This dataset is synthetically generated. All metrics shown are real &mdash; computed from the trained model and test set, not hardcoded.
+    For a real production system, retrain on genuine UPI transaction data.
+  </div>
+
+  <div id="modelLoading" class="spinner"></div>
+  <div id="modelError" class="error-msg"></div>
+  <div id="modelContent" style="display:none">
+
+    <div class="section-title" style="margin-bottom:12px">XGBoost Metrics</div>
+    <div class="metrics-grid" id="xgbMetrics"></div>
+
+    <div class="two-col" style="margin-bottom:16px">
+      <div class="card"><div class="card-title">ROC Curve</div><div class="chart-box tall"><canvas id="cROC"></canvas></div></div>
+      <div class="card"><div class="card-title">Precision-Recall Curve</div><div class="chart-box tall"><canvas id="cPR"></canvas></div></div>
+    </div>
+
+    <div class="two-col" style="margin-bottom:16px">
+      <div class="card">
+        <div class="card-title">Confusion Matrix &mdash; XGBoost</div>
+        <div id="confMatrix" style="display:flex;justify-content:center;padding:12px"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Model Comparison</div>
+        <div class="note-box" style="margin-bottom:12px">
+          Same train/test split and preprocessing. Metrics are actual &mdash; not claimed.
+        </div>
+        <div class="table-wrap" id="modelCompTable"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════ TOAST ══════════ -->
+<div id="toast"></div>
+
+<!-- ══════════ FOOTER ══════════ -->
+<footer>RealGuard &middot; Explainable AI &middot; FastAPI + XGBoost + SHAP &middot; &copy; 2026 Supriya</footer>
+
 <script>
-async function predict() {
+// ═══════════════════════════════════════════════════════
+// CONFIG — change API base for deployment
+// ═══════════════════════════════════════════════════════
+const API = window.location.origin;   // works locally AND on Render/any host
 
-    let data;
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+const flags = { UnusualLocation:1, UnusualAmount:1, NewDevice:1 };
+let histFilter = 'all';
+let gaugeChart = null;
+const chartInstances = {};
 
-    // ✅ Step 1: Read JSON
-    try {
-        data = JSON.parse(document.getElementById("jsonInput").value);
-    } catch (e) {
-        document.getElementById("result").innerHTML =
-            "<p style='color:red;'>❌ Invalid JSON format</p>";
-        return;
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+function showPage(name, tabEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (tabEl) tabEl.classList.add('active');
+  if (name === 'history')   loadHistory();
+  if (name === 'analytics') loadAnalytics();
+  if (name === 'model')     loadModelMetrics();
+}
+
+// ═══════════════════════════════════════════════════════
+// FLAG TOGGLES
+// ═══════════════════════════════════════════════════════
+function setFlag(name, val) {
+  flags[name] = val;
+  const map = { UnusualLocation:'unusualLoc', UnusualAmount:'unusualAmt', NewDevice:'newDev' };
+  const prefix = map[name];
+  document.getElementById(prefix+'_1').classList.toggle('active', val===1);
+  document.getElementById(prefix+'_0').classList.toggle('active', val===0);
+}
+
+// ═══════════════════════════════════════════════════════
+// HEALTH CHECK — real /health endpoint, not hardcoded
+// ═══════════════════════════════════════════════════════
+async function checkHealth() {
+  const badge = document.getElementById('apiBadge');
+  try {
+    const r = await fetch(API + '/health', { signal: AbortSignal.timeout(5000) });
+    const d = await r.json();
+    if (d.status === 'healthy') {
+      badge.textContent = '● API LIVE';
+      badge.style.cssText = 'color:var(--green);border-color:var(--green);background:#22c55e1a';
+    } else {
+      badge.textContent = '⚠ API DEGRADED';
+      badge.style.cssText = 'color:var(--amber);border-color:var(--amber);background:#f59e0b1a';
     }
+  } catch {
+    badge.textContent = '● API OFFLINE';
+    badge.style.cssText = 'color:var(--red);border-color:var(--red);background:#ef44441a';
+  }
+}
 
-    // ✅ Step 2: Send to backend
-    const res = await fetch("http://127.0.0.1:8000/predict", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(data)
+// ═══════════════════════════════════════════════════════
+// VALIDATION — client-side, mirrors backend Pydantic rules
+// ═══════════════════════════════════════════════════════
+function validateForm() {
+  const errs = [];
+  const gf  = id => parseFloat(document.getElementById(id).value);
+  const gi  = id => parseInt(document.getElementById(id).value, 10);
+
+  if (isNaN(gf('f_Amount'))  || gf('f_Amount') <= 0)   errs.push('Amount must be > 0');
+  if (isNaN(gf('f_AvgAmt'))  || gf('f_AvgAmt') <= 0)   errs.push('Avg Amount must be > 0');
+  if (isNaN(gi('f_Hour'))    || gi('f_Hour')   < 0  || gi('f_Hour')   > 23) errs.push('Hour must be 0-23');
+  if (isNaN(gi('f_Day'))     || gi('f_Day')    < 0  || gi('f_Day')    > 6)  errs.push('Day must be 0-6');
+  if (isNaN(gi('f_Failed'))  || gi('f_Failed') < 0)     errs.push('Failed Attempts must be >= 0');
+  if (isNaN(gf('f_Lat'))     || gf('f_Lat')   < -90  || gf('f_Lat')   > 90)  errs.push('Latitude must be -90 to 90');
+  if (isNaN(gf('f_Lon'))     || gf('f_Lon')   < -180 || gf('f_Lon')   > 180) errs.push('Longitude must be -180 to 180');
+  if (isNaN(gi('f_UserTxn')) || gi('f_UserTxn') < 0)   errs.push('User Transaction Count must be >= 0');
+  if (isNaN(gi('f_IP'))      || gi('f_IP')    < 0)      errs.push('IP Frequency must be >= 0');
+  if (isNaN(gi('f_Phone'))   || gi('f_Phone') < 0)      errs.push('Phone Usage Count must be >= 0');
+
+  const errEl = document.getElementById('formError');
+  if (errs.length) {
+    errEl.textContent = '❌ ' + errs.join('  ·  ');
+    errEl.style.display = 'block';
+    return false;
+  }
+  errEl.style.display = 'none';
+  return true;
+}
+
+// ═══════════════════════════════════════════════════════
+// ANALYSE
+// ═══════════════════════════════════════════════════════
+async function analyse() {
+  if (!validateForm()) return;
+
+  const btn = document.getElementById('analyseBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Analysing…';
+
+  const vc = document.getElementById('verdictCard');
+  vc.className = 'verdict idle';
+  vc.innerHTML = '<div class="spinner"></div>';
+  ['probCard','reasonCard','shapCard','summaryCard','riskIndCard'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+
+  const payload = {
+    Amount:               parseFloat(document.getElementById('f_Amount').value),
+    MerchantCategory:     document.getElementById('f_Merchant').value,
+    TransactionType:      document.getElementById('f_TxnType').value,
+    Latitude:             parseFloat(document.getElementById('f_Lat').value),
+    Longitude:            parseFloat(document.getElementById('f_Lon').value),
+    AvgTransactionAmount: parseFloat(document.getElementById('f_AvgAmt').value),
+    TransactionFrequency: document.getElementById('f_Freq').value,
+    UnusualLocation:      flags.UnusualLocation,
+    UnusualAmount:        flags.UnusualAmount,
+    NewDevice:            flags.NewDevice,
+    FailedAttempts:       parseInt(document.getElementById('f_Failed').value, 10),
+    Hour:                 parseInt(document.getElementById('f_Hour').value, 10),
+    DayOfWeek:            parseInt(document.getElementById('f_Day').value, 10),
+    User_Transaction_Count: parseInt(document.getElementById('f_UserTxn').value, 10),
+    IP_Frequency:         parseInt(document.getElementById('f_IP').value, 10),
+    Phone_Usage_Count:    parseInt(document.getElementById('f_Phone').value, 10),
+  };
+
+  try {
+    const res = await fetch(API + '/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
 
-    const result = await res.json();
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error (${res.status})`);
+    }
 
-    // ✅ Step 3: Display SAME backend output
-    let color = "low";
-    if (result.risk_level === "HIGH") color = "high";
-    else if (result.risk_level === "MEDIUM") color = "medium";
+    const r = await res.json();
+    renderResults(r);
+    showToast('Analysis complete — ' + r.txn_id);
 
-    document.getElementById("result").innerHTML = `
-        <h2>📊 Prediction Result</h2>
-
-        <p><b>Fraud Probability:</b> ${result.fraud_probability}</p>
-        <p><b>Model Probability:</b> ${result.raw_model_probability}</p>
-        <p><b>Is Fraud:</b> ${result.is_fraud}</p>
-
-        <p class="${color}">
-            <b>Risk Level:</b> ${result.risk_level}
-        </p>
-
-        <h3>🧠 Reasons:</h3>
-        <ul>
-            ${result.reasons.map(r => `<li>${r}</li>`).join("")}
-        </ul>
-    `;
+  } catch (e) {
+    vc.className = 'verdict idle';
+    vc.innerHTML = `
+      <div style="width:100%;text-align:center;color:var(--red);padding:20px">
+        <div style="font-size:2rem;margin-bottom:8px">&#x274C;</div>
+        <b>Analysis failed</b><br>
+        <small style="color:var(--muted)">${e.message}</small>
+      </div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🚀 Analyse Transaction';
+  }
 }
-</script>
 
+// ═══════════════════════════════════════════════════════
+// RENDER RESULTS — all values from API response
+// ═══════════════════════════════════════════════════════
+function renderResults(r) {
+  const level   = r.risk_level;
+  const isFraud = r.is_fraud;
+
+  // ── Verdict ──
+  const vc = document.getElementById('verdictCard');
+  const levelClass = level === 'HIGH' ? 'fraud' : level === 'MEDIUM' ? 'medium' : 'legit';
+  const levelColor = level === 'HIGH' ? 'var(--red)' : level === 'MEDIUM' ? 'var(--amber)' : 'var(--green)';
+  const icon = level === 'HIGH' ? '🚨' : level === 'MEDIUM' ? '⚠️' : '✅';
+  vc.className = 'verdict ' + levelClass;
+  vc.innerHTML = `
+    <div class="verdict-icon">${icon}</div>
+    <div>
+      <h2 style="color:${levelColor}">${isFraud ? 'FRAUD DETECTED' : 'LEGITIMATE'}</h2>
+      <p>Transaction ID: <b>${r.txn_id}</b></p>
+      <p>Fraud Probability: <b>${(r.fraud_probability * 100).toFixed(1)}%</b>
+         &nbsp;&middot;&nbsp;
+         Risk Score: <b>${r.risk_score}/100</b>
+      </p>
+      <span class="risk-pill pill-${level}">${level} RISK</span>
+    </div>
+  `;
+
+  // ── Gauge + score bars ──
+  const probCard = document.getElementById('probCard');
+  probCard.style.display = 'block';
+  buildGauge(r.fraud_probability);
+  const finalPct = (r.fraud_probability * 100).toFixed(1) + '%';
+  const rawPct   = (r.raw_model_probability * 100).toFixed(1) + '%';
+  const diff     = Math.abs(r.fraud_probability - r.raw_model_probability);
+  const rawRow   = document.getElementById('rawScoreRow');
+  const noteEl   = document.getElementById('riskScoreNote');
+
+  setTimeout(() => {
+    document.getElementById('pBar1').style.width = (r.fraud_probability * 100) + '%';
+    document.getElementById('pVal1').textContent  = finalPct;
+
+    if (diff >= 0.005) {
+      // Scores differ meaningfully — show raw score row
+      rawRow.style.display = 'flex';
+      document.getElementById('pBar2').style.width = (r.raw_model_probability * 100) + '%';
+      document.getElementById('pVal2').textContent  = rawPct;
+      noteEl.textContent = 'Final Risk = XGBoost raw score (' + rawPct + ') + domain-rule boosts. '
+        + 'Domain rules added ' + (diff * 100).toFixed(1) + '%.';
+    } else {
+      // Scores are effectively identical — hide raw row, explain why
+      rawRow.style.display = 'none';
+      noteEl.textContent = 'Final Risk = XGBoost probability (' + finalPct + '). '
+        + 'Domain-rule boosts were zero or negligible for this transaction.';
+    }
+  }, 100);
+
+  // ── Reasons ──
+  const reasonCard = document.getElementById('reasonCard');
+  reasonCard.style.display = 'block';
+  const rList = document.getElementById('reasonsList');
+  rList.innerHTML = '';
+  if (!r.reasons || r.reasons.length === 0) {
+    document.getElementById('noReasons').style.display = 'block';
+  } else {
+    document.getElementById('noReasons').style.display = 'none';
+    const icons = ['💸','🔁','📱','📍','⏰','🔓','🌐','⚡','🔔','🛑'];
+    r.reasons.forEach((reason, i) => {
+      const div = document.createElement('div');
+      div.className = 'reason-item';
+      div.style.animationDelay = (i * 0.08) + 's';
+      div.innerHTML = `<span>${icons[i % icons.length]}</span><span>${reason}</span>`;
+      rList.appendChild(div);
+    });
+  }
+
+  // ── SHAP — split into increasing / decreasing ──
+  const shapCard = document.getElementById('shapCard');
+  shapCard.style.display = 'block';
+
+  // Use new split fields if available, else split from all
+  const increasing = r.shap_increasing || (r.shap_features || []).filter(f => f.positive).slice(0, 6);
+  const decreasing = r.shap_decreasing || (r.shap_features || []).filter(f => !f.positive).slice(0, 4);
+  const allFeatures = [...increasing, ...decreasing];
+
+  if (allFeatures.length === 0) {
+    document.getElementById('shapEmpty').style.display = 'block';
+    document.getElementById('shapIncSection').style.display = 'none';
+    document.getElementById('shapDecSection').style.display = 'none';
+  } else {
+    document.getElementById('shapEmpty').style.display = 'none';
+    const maxVal = Math.max(...allFeatures.map(f => f.display || Math.abs(f.shap_value)));
+
+    // Render a section
+    function renderShapSection(items, containerId, sectionId, color) {
+      const section = document.getElementById(sectionId);
+      const list    = document.getElementById(containerId);
+      if (!items || items.length === 0) {
+        section.style.display = 'none';
+        return;
+      }
+      section.style.display = 'block';
+      list.innerHTML = '';
+      items.forEach(f => {
+        const pct = maxVal > 0 ? ((f.display || Math.abs(f.shap_value)) / maxVal * 100) : 0;
+        const val = f.shap_value;
+        const dirClass = val > 0 ? 'shap-up' : 'shap-down';
+        const arrow = val > 0 ? '↑' : '↓';
+        const row = document.createElement('div');
+        row.className = 'shap-row';
+        row.innerHTML = `
+          <span class="shap-label" title="${f.feature}">${f.feature}</span>
+          <div class="shap-bar-bg">
+            <div class="shap-bar-fill" style="background:${color};width:0" data-pct="${pct}"></div>
+          </div>
+          <span class="shap-val">${val.toFixed(4)}</span>
+          <span class="shap-dir ${dirClass}">${arrow}</span>
+        `;
+        list.appendChild(row);
+      });
+    }
+
+    renderShapSection(increasing, 'shapIncList', 'shapIncSection', 'var(--red)');
+    renderShapSection(decreasing, 'shapDecList', 'shapDecSection', 'var(--green)');
+
+    setTimeout(() => {
+      document.querySelectorAll('.shap-bar-fill').forEach(el => {
+        el.style.width = el.dataset.pct + '%';
+      });
+    }, 100);
+  }
+
+  // ── Transaction Summary — all values from API response ──
+  const sum  = r.transaction_summary;
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  document.getElementById('summaryCard').style.display = 'block';
+  document.getElementById('summaryGrid').innerHTML = `
+    <div class="summary-item">
+      <span class="s-label">Amount</span>
+      <span class="s-val">Rs.${Number(sum.amount).toLocaleString('en-IN')}</span>
+    </div>
+    <div class="summary-item">
+      <span class="s-label">Avg Amount</span>
+      <span class="s-val">Rs.${Number(sum.avg_amount).toLocaleString('en-IN')}</span>
+    </div>
+    <div class="summary-item">
+      <span class="s-label">Merchant</span>
+      <span class="s-val">${sum.merchant}</span>
+    </div>
+    <div class="summary-item">
+      <span class="s-label">Type</span>
+      <span class="s-val">${sum.txn_type}</span>
+    </div>
+    <div class="summary-item">
+      <span class="s-label">Time</span>
+      <span class="s-val">${String(sum.hour).padStart(2,'0')}:00 &middot; ${days[sum.day_of_week] || sum.day_of_week}</span>
+    </div>
+    <div class="summary-item">
+      <span class="s-label">Location</span>
+      <span class="s-val">${sum.location}</span>
+    </div>
+    <div class="summary-item">
+      <span class="s-label">Device</span>
+      <span class="s-val">${sum.new_device ? '⚠ New Device' : '✅ Known Device'}</span>
+    </div>
+    <div class="summary-item">
+      <span class="s-label">Failed Attempts</span>
+      <span class="s-val">${sum.failed_attempts}</span>
+    </div>
+    <div class="summary-item">
+      <span class="s-label">Amount Ratio</span>
+      <span class="s-val">${sum.amount_ratio}x avg</span>
+    </div>
+    <div class="summary-item">
+      <span class="s-label">IP Frequency</span>
+      <span class="s-val">${sum.ip_frequency}</span>
+    </div>
+  `;
+
+  // ── Risk Indicators — generated from actual submitted values ──
+  document.getElementById('riskIndCard').style.display = 'block';
+  const indicators = [
+    { cond: sum.new_device,                 label: 'New / Unrecognised Device' },
+    { cond: sum.unusual_loc,                label: 'Unusual Transaction Location' },
+    { cond: sum.unusual_amt,                label: 'Unusual Transaction Amount' },
+    { cond: sum.failed_attempts > 2,        label: `High Failed Attempts: ${sum.failed_attempts}` },
+    { cond: sum.failed_attempts > 0 && sum.failed_attempts <= 2,
+                                            label: `Failed Attempt(s): ${sum.failed_attempts}` },
+    { cond: sum.ip_frequency > 10,          label: `High IP Frequency: ${sum.ip_frequency}` },
+    { cond: sum.hour < 5,                   label: `Late Night Activity: ${String(sum.hour).padStart(2,'0')}:00` },
+    { cond: sum.amount_ratio > 3,           label: `Amount ${sum.amount_ratio}x above average` },
+  ];
+
+  // Only show indicators that are relevant (bad=true → show as warning; include all false ones as "clear")
+  const activeIndicators = indicators.filter(ind => ind.cond);
+  const clearIndicators  = [
+    { cond: !sum.new_device,        label: 'Known Device' },
+    { cond: !sum.unusual_loc,       label: 'Normal Location' },
+    { cond: !sum.unusual_amt,       label: 'Normal Amount' },
+    { cond: sum.failed_attempts===0,label: 'No Failed Attempts' },
+    { cond: sum.hour >= 5,          label: 'Normal Business Hours' },
+  ].filter(i => i.cond);
+
+  const toShow = [...activeIndicators, ...clearIndicators].slice(0, 8);
+  document.getElementById('riskIndList').innerHTML = toShow.map(ind =>
+    `<div class="ri-item ${activeIndicators.includes(ind) ? 'bad' : 'good'}">
+       <div class="ri-dot ${activeIndicators.includes(ind) ? 'ri-bad' : 'ri-good'}"></div>
+       <span>${ind.label}</span>
+     </div>`
+  ).join('');
+
+  // Scroll smoothly to verdict
+  document.getElementById('verdictCard').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+// ═══════════════════════════════════════════════════════
+// GAUGE CHART
+// ═══════════════════════════════════════════════════════
+function buildGauge(prob) {
+  const pct   = Math.round(prob * 100);
+  const color = prob >= 0.65 ? 'var(--red)' : prob >= 0.30 ? 'var(--amber)' : 'var(--green)';
+  const ctx   = document.getElementById('gaugeChart').getContext('2d');
+  if (gaugeChart) gaugeChart.destroy();
+  gaugeChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [prob, 1 - prob],
+        backgroundColor: [color, '#1e293b'],
+        borderWidth: 0,
+        circumference: 180,
+        rotation: 270,
+      }]
+    },
+    options: {
+      cutout: '72%',
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      animation: { duration: 900, easing: 'easeOutQuart' },
+    }
+  });
+  document.getElementById('gaugeLabel').textContent = pct + '%';
+  document.getElementById('gaugeLabel').style.color = color;
+}
+
+// ═══════════════════════════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════════════════════════
+function setHistFilter(f) {
+  histFilter = f;
+  ['All','Fraud','Legit'].forEach(x => {
+    const el = document.getElementById('filter' + x);
+    if (el) el.classList.toggle('active', x.toLowerCase() === f);
+  });
+  loadHistory();
+}
+
+async function loadHistory() {
+  const search = document.getElementById('histSearch').value;
+  const params = new URLSearchParams({
+    limit:      100,
+    fraud_only: histFilter === 'fraud',
+    legit_only: histFilter === 'legit',
+    search,
+  });
+  try {
+    const r    = await fetch(`${API}/history?${params}`);
+    const rows = await r.json();
+    renderHistoryTable(rows);
+  } catch {
+    document.getElementById('histTableWrap').innerHTML =
+      '<div class="empty-state"><div class="es-icon">&#x274C;</div><p>Could not load history. Is the server running?</p></div>';
+  }
+}
+
+function renderHistoryTable(rows) {
+  const wrap = document.getElementById('histTableWrap');
+  if (!rows.length) {
+    wrap.innerHTML = '<div class="empty-state"><div class="es-icon">&#x1F4ED;</div><p>No transactions match your filter.</p></div>';
+    return;
+  }
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  wrap.innerHTML = `
+    <table>
+      <thead><tr>
+        <th>TXN ID</th><th>Date/Time</th><th>Amount (Rs.)</th>
+        <th>Merchant</th><th>Type</th><th>Fraud Prob</th>
+        <th>Risk Score</th><th>Risk Level</th><th>Prediction</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr>
+            <td style="font-family:monospace;font-size:.75rem">${r.txn_id}</td>
+            <td>${r.created_at.replace('T',' ').slice(0,19)}</td>
+            <td>Rs.${Number(r.amount).toLocaleString('en-IN')}</td>
+            <td>${r.merchant}</td>
+            <td>${r.txn_type}</td>
+            <td>${(r.fraud_prob * 100).toFixed(1)}%</td>
+            <td>${r.risk_score}/100</td>
+            <td><span class="badge-${r.risk_level}">${r.risk_level}</span></td>
+            <td><span class="${r.is_fraud ? 'badge-fraud' : 'badge-legit'}">${r.is_fraud ? 'FRAUD' : 'LEGIT'}</span></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+async function clearHistory() {
+  if (!confirm('Clear all transaction history? This cannot be undone.')) return;
+  await fetch(API + '/history', { method:'DELETE' });
+  loadHistory();
+  showToast('History cleared');
+}
+
+// ═══════════════════════════════════════════════════════
+// ANALYTICS — real data from /analytics endpoint
+// ═══════════════════════════════════════════════════════
+async function loadAnalytics() {
+  try {
+    const r = await fetch(API + '/analytics');
+    const d = await r.json();
+    renderAnalytics(d);
+  } catch {
+    document.getElementById('analyticsEmpty').style.display = 'block';
+    document.getElementById('analyticsCharts').style.display = 'none';
+  }
+}
+
+function renderAnalytics(d) {
+  if (d.total === 0) {
+    document.getElementById('analyticsEmpty').style.display  = 'block';
+    document.getElementById('analyticsCharts').style.display = 'none';
+    return;
+  }
+  document.getElementById('analyticsEmpty').style.display  = 'none';
+  document.getElementById('analyticsCharts').style.display = 'block';
+
+  document.getElementById('sTot').textContent    = d.total;
+  document.getElementById('sFraud').textContent  = d.fraud;
+  document.getElementById('sLegit').textContent  = d.legit;
+  document.getElementById('sRate').textContent   = d.fraud_rate + '%';
+  document.getElementById('sAvgAmt').textContent = 'Rs.' + Number(d.avg_amount).toLocaleString('en-IN');
+  document.getElementById('sAvgRisk').textContent= d.avg_risk;
+
+  const gridColor = '#1e293b';
+  const axisColor = '#94a3b8';
+  const baseOpts  = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: axisColor, font: { size: 11 } } } },
+    scales: {
+      x: { ticks: { color: axisColor, font: { size: 10 } }, grid: { color: gridColor } },
+      y: { ticks: { color: axisColor }, grid: { color: gridColor } },
+    },
+  };
+
+  makeChart('cFvL','doughnut',{
+    labels: ['Fraud','Legitimate'],
+    datasets: [{ data:[d.fraud, d.legit], backgroundColor:['#ef4444','#22c55e'], borderWidth:0 }],
+  },{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ labels:{ color:axisColor } } } });
+
+  const merchants = d.by_merchant;
+  makeChart('cMerchant','bar',{
+    labels: merchants.map(m => m.merchant),
+    datasets: [
+      { label:'Fraud', data:merchants.map(m => m.fraud), backgroundColor:'#ef444488', borderColor:'#ef4444', borderWidth:1.5, borderRadius:4 },
+      { label:'Total', data:merchants.map(m => m.total), backgroundColor:'#3b82f688', borderColor:'#3b82f6', borderWidth:1.5, borderRadius:4 },
+    ],
+  }, baseOpts);
+
+  const types = d.by_type;
+  makeChart('cType','bar',{
+    labels: types.map(t => t.txn_type),
+    datasets: [
+      { label:'Fraud', data:types.map(t => t.fraud), backgroundColor:'#ef444488', borderRadius:4 },
+      { label:'Total', data:types.map(t => t.total), backgroundColor:'#3b82f688', borderRadius:4 },
+    ],
+  }, baseOpts);
+
+  const hours = Array.from({length:24}, (_,i) => ({ hour:i, fraud:0, total:0 }));
+  d.by_hour.forEach(h => { hours[h.txn_hour].fraud = h.fraud; hours[h.txn_hour].total = h.total; });
+  makeChart('cHour','line',{
+    labels: hours.map(h => h.hour + ':00'),
+    datasets: [
+      { label:'Fraud', data:hours.map(h => h.fraud), borderColor:'#ef4444', backgroundColor:'#ef444422', tension:.4, fill:true },
+      { label:'Total', data:hours.map(h => h.total), borderColor:'#3b82f6', backgroundColor:'#3b82f622', tension:.4, fill:true },
+    ],
+  }, baseOpts);
+
+  const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const byDay = Array.from({length:7}, (_,i) => ({ day:i, fraud:0, total:0 }));
+  d.by_day.forEach(dy => { byDay[dy.day_of_week].fraud = dy.fraud; byDay[dy.day_of_week].total = dy.total; });
+  makeChart('cDay','bar',{
+    labels: dayNames,
+    datasets: [
+      { label:'Fraud', data:byDay.map(x => x.fraud), backgroundColor:'#ef444488', borderRadius:4 },
+      { label:'Total', data:byDay.map(x => x.total), backgroundColor:'#3b82f688', borderRadius:4 },
+    ],
+  }, baseOpts);
+
+  if (d.amounts && d.amounts.length > 0) {
+    const buckets  = 10;
+    const minA = Math.min(...d.amounts), maxA = Math.max(...d.amounts);
+    const step  = (maxA - minA) / buckets || 1;
+    const cnts  = Array(buckets).fill(0);
+    d.amounts.forEach(a => {
+      const idx = Math.min(Math.floor((a - minA) / step), buckets - 1);
+      cnts[idx]++;
+    });
+    const lbls = Array.from({length:buckets}, (_,i) =>
+      'Rs.' + Math.round(minA + i * step).toLocaleString('en-IN')
+    );
+    makeChart('cAmt','bar',{
+      labels: lbls,
+      datasets: [{ label:'Count', data:cnts, backgroundColor:'#3b82f688', borderRadius:4 }],
+    }, baseOpts);
+  }
+}
+
+function makeChart(id, type, data, options) {
+  if (chartInstances[id]) chartInstances[id].destroy();
+  chartInstances[id] = new Chart(document.getElementById(id).getContext('2d'), { type, data, options });
+}
+
+// ═══════════════════════════════════════════════════════
+// MODEL METRICS — real data from /model-metrics endpoint
+// ═══════════════════════════════════════════════════════
+async function loadModelMetrics() {
+  const loading = document.getElementById('modelLoading');
+  const errEl   = document.getElementById('modelError');
+  const content = document.getElementById('modelContent');
+  loading.style.display = 'block';
+  errEl.style.display   = 'none';
+  content.style.display = 'none';
+  try {
+    const r = await fetch(API + '/model-metrics');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    renderModelMetrics(d);
+    loading.style.display = 'none';
+    content.style.display = 'block';
+  } catch (e) {
+    loading.style.display = 'none';
+    errEl.textContent = 'Unable to load model metrics. ' + e.message;
+    errEl.style.display = 'block';
+  }
+}
+
+function renderModelMetrics(d) {
+  const xm = d.xgboost;
+  const metricDefs = [
+    { key:'accuracy',  label:'Accuracy',  sub:'Overall correct' },
+    { key:'precision', label:'Precision', sub:'Predicted fraud = actual fraud' },
+    { key:'recall',    label:'Recall',    sub:'Actual fraud cases caught' },
+    { key:'f1',        label:'F1 Score',  sub:'Harmonic mean of P & R' },
+    { key:'roc_auc',   label:'ROC-AUC',   sub:'Discriminative ability' },
+    { key:'pr_auc',    label:'PR-AUC',    sub:'Precision-Recall area' },
+  ];
+  document.getElementById('xgbMetrics').innerHTML = metricDefs.map(m => `
+    <div class="metric-card">
+      <div class="mc-label">${m.label}</div>
+      <div class="mc-val">${((xm[m.key] || 0) * 100).toFixed(1)}%</div>
+      <div class="mc-sub">${m.sub}</div>
+    </div>
+  `).join('');
+
+  const gridColor = '#1e293b', axisColor = '#94a3b8';
+  makeChart('cROC','line',{
+    labels: d.roc_curve.fpr,
+    datasets: [
+      { label:'XGBoost ROC', data:d.roc_curve.fpr.map((x,i) => ({x, y:d.roc_curve.tpr[i]})),
+        borderColor:'#3b82f6', backgroundColor:'#3b82f622', fill:true, tension:.3, pointRadius:0 },
+      { label:'Random (AUC=0.5)', data:[{x:0,y:0},{x:1,y:1}],
+        borderColor:'#64748b', borderDash:[5,5], pointRadius:0 },
+    ],
+  },{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ labels:{ color:axisColor, font:{size:11} } } },
+    scales:{
+      x:{ type:'linear', title:{ display:true, text:'False Positive Rate', color:axisColor }, ticks:{ color:axisColor }, grid:{ color:gridColor } },
+      y:{ title:{ display:true, text:'True Positive Rate',  color:axisColor }, ticks:{ color:axisColor }, grid:{ color:gridColor } },
+    },
+  });
+
+  makeChart('cPR','line',{
+    labels: d.pr_curve.recall,
+    datasets: [
+      { label:'Precision-Recall', data:d.pr_curve.recall.map((x,i) => ({x, y:d.pr_curve.precision[i]})),
+        borderColor:'#f59e0b', backgroundColor:'#f59e0b22', fill:true, tension:.3, pointRadius:0 },
+    ],
+  },{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ labels:{ color:axisColor, font:{size:11} } } },
+    scales:{
+      x:{ type:'linear', title:{ display:true, text:'Recall',    color:axisColor }, ticks:{ color:axisColor }, grid:{ color:gridColor } },
+      y:{ title:{ display:true, text:'Precision', color:axisColor }, ticks:{ color:axisColor }, grid:{ color:gridColor } },
+    },
+  });
+
+  const cm = xm.confusion_matrix;
+  document.getElementById('confMatrix').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center;max-width:280px">
+      <div style="background:#14532d33;border:1px solid #14532d;padding:16px;border-radius:8px">
+        <div style="font-size:.68rem;color:var(--sub)">True Negative</div>
+        <div style="font-size:1.8rem;font-weight:800;color:#86efac">${cm[0][0]}</div>
+        <div style="font-size:.68rem;color:var(--muted)">Correct Legit</div>
+      </div>
+      <div style="background:#7f1d1d33;border:1px solid #7f1d1d;padding:16px;border-radius:8px">
+        <div style="font-size:.68rem;color:var(--sub)">False Positive</div>
+        <div style="font-size:1.8rem;font-weight:800;color:#fca5a5">${cm[0][1]}</div>
+        <div style="font-size:.68rem;color:var(--muted)">False Alarm</div>
+      </div>
+      <div style="background:#78350f33;border:1px solid #78350f;padding:16px;border-radius:8px">
+        <div style="font-size:.68rem;color:var(--sub)">False Negative</div>
+        <div style="font-size:1.8rem;font-weight:800;color:#fcd34d">${cm[1][0]}</div>
+        <div style="font-size:.68rem;color:var(--muted)">Missed Fraud</div>
+      </div>
+      <div style="background:#14532d33;border:1px solid #14532d;padding:16px;border-radius:8px">
+        <div style="font-size:.68rem;color:var(--sub)">True Positive</div>
+        <div style="font-size:1.8rem;font-weight:800;color:#86efac">${cm[1][1]}</div>
+        <div style="font-size:.68rem;color:var(--muted)">Caught Fraud</div>
+      </div>
+    </div>
+  `;
+
+  const models = [
+    { name:'XGBoost',       m:d.xgboost },
+    { name:'Logistic Reg.', m:d.logistic_regression },
+    { name:'Random Forest', m:d.random_forest },
+  ];
+  document.getElementById('modelCompTable').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>Model</th><th>Accuracy</th><th>Precision</th>
+        <th>Recall</th><th>F1</th><th>ROC-AUC</th><th>PR-AUC</th>
+      </tr></thead>
+      <tbody>
+        ${models.map(({ name, m }) => `
+          <tr>
+            <td><b>${name}</b></td>
+            <td>${((m.accuracy  || 0) * 100).toFixed(1)}%</td>
+            <td>${((m.precision || 0) * 100).toFixed(1)}%</td>
+            <td>${((m.recall    || 0) * 100).toFixed(1)}%</td>
+            <td>${((m.f1        || 0) * 100).toFixed(1)}%</td>
+            <td>${((m.roc_auc   || 0) * 100).toFixed(1)}%</td>
+            <td>${((m.pr_auc    || 0) * 100).toFixed(1)}%</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+checkHealth();
+setInterval(checkHealth, 30000);   // re-check every 30 s
+</script>
 </body>
 </html>
