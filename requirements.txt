@@ -8,3 +8,4 @@ xgboost==3.2.0
 shap==0.51.0
 imbalanced-learn==0.14.1
 python-multipart==0.0.20
+streamlit
